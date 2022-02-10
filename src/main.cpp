@@ -38,6 +38,8 @@ const uint8_t keyboardHidDescriptor[] = {
         0x75, 0x10,                    //   REPORT_SIZE (16)
         0x81, 0x00,                    //   INPUT (Data,Var,Abs)
         0xc0,                          // END_COLLECTION
+
+
         0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
         0x09, 0x07,                    // USAGE (Keypad)
         0xa1, 0x01,                    // COLLECTION (Application)
@@ -52,10 +54,17 @@ const uint8_t keyboardHidDescriptor[] = {
         0x81, 0x02,                    //   INPUT (Data,Var,Abs)
         0x95, 0x01,                    //   REPORT_COUNT (1)
         0x75, 0x08,                    //   REPORT_SIZE (8)
+        0x81, 0x01,                    //   INPUT (Constant) Reserved Byte
+        0x95, 0x06,                    //   REPORT_COUNT (6)
+        0x75, 0x08,                    //   REPORT_SIZE (8)
         0x25, 0x65,                    //   LOGICAL_MAXIMUM (101)
-        0x19, 0x00,                    //   USAGE_MINIMUM (Reserved (no event indicated))
-        0x29, 0x65,                    //   USAGE_MAXIMUM (Keyboard Application)
-        0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
+        0x05, 0x07,                    //   Usage Page (Key Codes)
+        0x19, 0x00,                    //   Usage Minimum (Reserved (No event indicated))
+        0x29, 0x65,                    //   Usage Minimum (Keyboard application)
+        0x81, 0x00,                    //   INPUT (Data,Array) Key Arrays (6 bytes)
+//        0x19, 0x00,                    //   USAGE_MINIMUM (Reserved (no event indicated))
+//        0x29, 0x65,                    //   USAGE_MAXIMUM (Keyboard Application)
+//        0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
         0xc0                           // END_COLLECTION
 };
 
@@ -81,7 +90,8 @@ typedef struct
     uint8_t  KB_KeyboardKeyboardRightShift   : 1;        // Usage 0x000700E5: Keyboard Right Shift, Value = 0 to 1
     uint8_t  KB_KeyboardKeyboardRightAlt   : 1;          // Usage 0x000700E6: Keyboard Right Alt, Value = 0 to 1
     uint8_t  KB_KeyboardKeyboardRightGui   : 1;          // Usage 0x000700E7: Keyboard Right GUI, Value = 0 to 1
-    uint8_t  Key;                                 // Value = 0 to 101
+    uint8_t  _reserved;
+    uint8_t  Key[6];                                 // Value = 0 to 101
 } inputKeyboard_t;
 
 static inputConsumer_t consumer_Report{};
@@ -127,11 +137,10 @@ void taskServer(void*){
     inputVolume = hid->inputReport(1); // <-- input REPORTID from report map
     outputVolume = hid->outputReport(1); // <-- output REPORTID from report map
 
-
     input = hid->inputReport(2); // <-- input REPORTID from report map
     output = hid->outputReport(2); // <-- output REPORTID from report map
 
-    std::string name = "ElectronicCats";
+    std::string name = "SubstantiveTech";
     hid->manufacturer()->setValue(name);
 
     hid->pnp(0x02, 0xe502, 0xa111, 0x0210);
@@ -194,7 +203,7 @@ void loop() {
             if (connected) {
 //                digitalWrite(ledPin, HIGH);
 //            a.Key = random(0x02,0x27);
-                a.Key = 0x02 + i;
+                a.Key[i%6] = 0x02 + i;
                 //   a.reportId = 0x02;
                 input->setValue((uint8_t*)&a,sizeof(a));
                 input->notify();
@@ -207,8 +216,8 @@ void loop() {
             if(connected) {
 
 //                digitalWrite(ledPin, HIGH);
-                a.Key = 0x0;
-                //   a.reportId = 0x02;
+                a.Key[i%6] = 0x0;
+//                   a.reportId = 0x02;
                 input->setValue((uint8_t*)&a,sizeof(a));
                 input->notify();
 

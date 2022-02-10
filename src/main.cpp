@@ -4,7 +4,6 @@
 #include "BLE2902.h"
 #include "BLEHIDDevice.h"
 #include "HIDTypes.h"
-
 #include "HIDKeyboardTypes.h"
 #include <Adafruit_MPR121.h>
 
@@ -39,7 +38,6 @@ const uint8_t keyboardHidDescriptor[] = {
         0x81, 0x00,                    //   INPUT (Data,Var,Abs)
         0xc0,                          // END_COLLECTION
 
-
         0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
         0x09, 0x07,                    // USAGE (Keypad)
         0xa1, 0x01,                    // COLLECTION (Application)
@@ -52,9 +50,11 @@ const uint8_t keyboardHidDescriptor[] = {
         0x75, 0x01,                    //   REPORT_SIZE (1)
         0x95, 0x08,                    //   REPORT_COUNT (8)
         0x81, 0x02,                    //   INPUT (Data,Var,Abs)
+
         0x95, 0x01,                    //   REPORT_COUNT (1)
         0x75, 0x08,                    //   REPORT_SIZE (8)
         0x81, 0x01,                    //   INPUT (Constant) Reserved Byte
+
         0x95, 0x06,                    //   REPORT_COUNT (6)
         0x75, 0x08,                    //   REPORT_SIZE (8)
         0x25, 0x65,                    //   LOGICAL_MAXIMUM (101)
@@ -62,9 +62,6 @@ const uint8_t keyboardHidDescriptor[] = {
         0x19, 0x00,                    //   Usage Minimum (Reserved (No event indicated))
         0x29, 0x65,                    //   Usage Minimum (Keyboard application)
         0x81, 0x00,                    //   INPUT (Data,Array) Key Arrays (6 bytes)
-//        0x19, 0x00,                    //   USAGE_MINIMUM (Reserved (no event indicated))
-//        0x29, 0x65,                    //   USAGE_MAXIMUM (Keyboard Application)
-//        0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
         0xc0                           // END_COLLECTION
 };
 
@@ -124,12 +121,8 @@ class MyCallbacks : public BLEServerCallbacks {
     }
 };
 
-
-const int ledPin = A12;
-
-
 void taskServer(void*){
-    BLEDevice::init("ESP32");
+    BLEDevice::init("TouchPad");
     BLEServer *pServer = BLEDevice::createServer();
     pServer->setCallbacks(new MyCallbacks());
 
@@ -178,12 +171,6 @@ void setup() {
         while (1);
     }
     Serial.println("MPR121 found!");
-
-    pinMode(ledPin, OUTPUT);
-
-//  empty_keyboard_report.reportId = 0x02;
-    //consumer_Report.reportId = 0x01;
-
     Serial.println("Starting BLE work!");
     xTaskCreate(taskServer, "server", 20000, NULL, 5, NULL);
 }
@@ -228,53 +215,5 @@ void loop() {
     }
     // reset our state
     lasttouched = currtouched;
-    delay(100);
-
-//    digitalWrite(ledPin, LOW);
-    // comment out this line for detailed data from the sensor!
-//    return;
-//
-//    // debugging info, what
-//    Serial.print("\t\t\t\t\t\t\t\t\t\t\t\t\t 0x"); Serial.println(cap.touched(), HEX);
-//    Serial.print("Filt: ");
-//    for (uint8_t i=0; i<12; i++) {
-//        Serial.print(cap.filteredData(i)); Serial.print("\t");
-//    }
-//    Serial.println();
-//    Serial.print("Base: ");
-//    for (uint8_t i=0; i<12; i++) {
-//        Serial.print(cap.baselineData(i)); Serial.print("\t");
-//    }
-//    Serial.println();
-//
-//    // put a delay so it isn't overwhelming
-//    delay(100);
-
-//    delay(500);
-//    if(connected){
-//        digitalWrite(ledPin, HIGH);
-//        inputKeyboard_t a{};
-//        a.Key = random(0x02,0x27);
-//        //   a.reportId = 0x02;
-//        input->setValue((uint8_t*)&a,sizeof(a));
-//        input->notify();
-//
-//        input->setValue((uint8_t*)(&empty_keyboard_report), sizeof(empty_keyboard_report));
-//        input->notify();
-//
-//        inputConsumer_t b{};
-//   b.reportId = 0x01;
-
-//        b.ConsumerControl = volDirUp ? 0xE9 : 0xEA;
-//        volDirUp = volDirUp ? false : true;
-//        inputVolume->setValue((uint8_t*)&b,sizeof(b));
-//        inputVolume->notify();
-//
-//        inputVolume->setValue((uint8_t*)&consumer_Report,sizeof(consumer_Report));
-//        inputVolume->notify();
-//
-//        delay(100);
-//        digitalWrite(ledPin, LOW);
-//    }
 }
 

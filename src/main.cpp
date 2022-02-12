@@ -6,8 +6,12 @@
 #include "HIDTypes.h"
 #include "HIDKeyboardTypes.h"
 #include <Adafruit_MPR121.h>
+#include <WiFi.h>
 
+#include <Ethernet.h>
 #include <Arduino.h>
+#include <device-types/HABinarySensor.h>
+#include <ArduinoHA.h>
 
 #include "blinds.h"
 #include "hidReportDescriptor.h"
@@ -23,6 +27,18 @@
 Adafruit_MPR121 cap = Adafruit_MPR121();
 Blinds * blinds = new Blinds(12);
 
+int switch_count = 5;
+HASwitch * switches [] = {
+new HASwitch("blinds_channel1", true),
+new HASwitch("blinds_channel2", true),
+new HASwitch("blinds_channel3", true),
+new HASwitch("blinds_channel4", true),
+new HASwitch("blinds_channel5", true)
+};
+
+HADevice device("blinds_touch_pad");
+EthernetClient client;
+HAMqtt mqtt(client, device);
 
 static inputConsumer_t consumer_Report{};
 static inputKeyboard_t empty_keyboard_report{}; // sent to PC
@@ -34,7 +50,7 @@ BLECharacteristic* inputVolume;
 BLECharacteristic* outputVolume;
 bool connected = false;
 
-char * ha_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiIzNzhjMDUyYzViZDU0NDgwYmRlZmJiMGVlYzM4YTEyOSIsImlhdCI6MTY0NDYzODYxOCwiZXhwIjoxOTU5OTk4NjE4fQ.0iUaKd_cjfLZLwEp3WXUgbx2TV-Y7bGXT-lDy09WW1U";
+char  ha_token[] = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiIzNzhjMDUyYzViZDU0NDgwYmRlZmJiMGVlYzM4YTEyOSIsImlhdCI6MTY0NDYzODYxOCwiZXhwIjoxOTU5OTk4NjE4fQ.0iUaKd_cjfLZLwEp3WXUgbx2TV-Y7bGXT-lDy09WW1U";
 
 class MyCallbacks : public BLEServerCallbacks {
     void onConnect(BLEServer* pServer){
@@ -92,12 +108,66 @@ void taskServer(void*){
     delay(portMAX_DELAY);
 }
 
+void onBlindsStateChanged(bool state, HASwitch * s)
+{
+    for(int i = 0; i < switch_count; ++i)
+    {
+        if (s == switches[i])
+        {
+            switch(i + 1)
+            {
+                case 1:
+                    blinds->sendCommand(state ? BlindsCommandOpen : BlindsCommandClose, BlindsChannel1);
+                   break;
+                case 2:
+                    blinds->sendCommand(state ? BlindsCommandOpen : BlindsCommandClose, BlindsChannel2);
+                    break;
+                case 3:
+                    blinds->sendCommand(state ? BlindsCommandOpen : BlindsCommandClose, BlindsChannel3);
+                    break;
+                case 4:
+                    blinds->sendCommand(state ? BlindsCommandOpen : BlindsCommandClose, BlindsChannel4);
+                    break;
+                case 5:
+                    blinds->sendCommand(state ? BlindsCommandOpen : BlindsCommandClose, BlindsChannel5);
+                    break;
+            }
+        }
+    }
+
+}
+
 void setup() {
     Serial.begin(9600);
 
     while (!Serial) { // needed to keep leonardo/micro from starting too fast!
         delay(10);
     }
+
+    WiFi.begin("WaitingOnComcast", "1594N2640W");
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.println("Connecting to WiFi..");
+    }
+
+    device.setName("Blinds TouchPad");
+    device.setSoftwareVersion("0.0.1");
+
+    char name[16] = {0};
+    for (int i = 0; i < switch_count; ++i)
+    {
+        sprintf(name, "Blinds Channel %d", i);
+       switches[i]->setName(name);
+
+       //TODO: Find a better icon
+       switches[i]->setIcon("mdi:lightbulb");
+       switches[i]->onStateChanged(onBlindsStateChanged);
+    }
+
+    //TODO: Does thebrokerhave a username andpassword?
+
+    mqtt.begin("tiltpi.equationoftime.tech:1883");
 
     // Default address is 0x5A, if tied to 3.3V its 0x5B
     // If tied to SDA its 0x5C and if SCL then 0x5D
@@ -109,7 +179,8 @@ void setup() {
 }
 
 void loop() {
-    delay(1000);
+    mqtt.loop();
+
 //    blinds->sendCommand(BlindsCommandUp, BlindsChannel1);
 
 //    inputKeyboard_t a{};

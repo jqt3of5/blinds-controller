@@ -23,11 +23,6 @@
 Adafruit_MPR121 cap = Adafruit_MPR121();
 Blinds * blinds = new Blinds(12);
 
-// Keeps track of the last pins touched
-// so we know when buttons are 'released'
-uint16_t lasttouched = 0;
-uint16_t currtouched = 0;
-
 
 static inputConsumer_t consumer_Report{};
 static inputKeyboard_t empty_keyboard_report{}; // sent to PC
@@ -38,6 +33,8 @@ BLECharacteristic* output;
 BLECharacteristic* inputVolume;
 BLECharacteristic* outputVolume;
 bool connected = false;
+
+char * ha_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiIzNzhjMDUyYzViZDU0NDgwYmRlZmJiMGVlYzM4YTEyOSIsImlhdCI6MTY0NDYzODYxOCwiZXhwIjoxOTU5OTk4NjE4fQ.0iUaKd_cjfLZLwEp3WXUgbx2TV-Y7bGXT-lDy09WW1U";
 
 class MyCallbacks : public BLEServerCallbacks {
     void onConnect(BLEServer* pServer){
@@ -113,48 +110,11 @@ void setup() {
 
 void loop() {
     delay(1000);
-    blinds->sendCommand(BlindsCommandUp, BlindsChannel1);
+//    blinds->sendCommand(BlindsCommandUp, BlindsChannel1);
 
-}
-
-//    static bool volDirUp = true;
-    // put your main code here, to run repeatedly:
-
-    // Get the currently touched pads
-//    currtouched = cap.touched();
-//
 //    inputKeyboard_t a{};
-//    for (uint8_t i=0; i<12; i++) {
-//        // it if *is* touched and *wasnt* touched before, alert!
-//        if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) ) {
-//            Serial.print(i); Serial.println(" touched");
-//            if (connected) {
-////                digitalWrite(ledPin, HIGH);
-////            a.Key = random(0x02,0x27);
-//                a.Key[i%6] = 0x02 + i;
+//    a.Key[i%6] = 0x02 + i;
 //                //   a.reportId = 0x02;
 //                input->setValue((uint8_t*)&a,sizeof(a));
 //                input->notify();
-//            }
-//        }
-//        // if it *was* touched and now *isnt*, alert!
-//        if (!(currtouched & _BV(i)) && (lasttouched & _BV(i)) ) {
-//            Serial.print(i); Serial.println(" released");
-//
-//            if(connected) {
-//
-////                digitalWrite(ledPin, HIGH);
-//                a.Key[i%6] = 0x0;
-////                   a.reportId = 0x02;
-//                input->setValue((uint8_t*)&a,sizeof(a));
-//                input->notify();
-//
-////                input->setValue((uint8_t*)(&empty_keyboard_report), sizeof(empty_keyboard_report));
-////                input->notify();
-//            }
-//        }
-//    }
-//    // reset our state
-//    lasttouched = currtouched;
-//}
-
+}

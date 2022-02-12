@@ -4,8 +4,6 @@
 #include "blinds.h"
 #include <Arduino.h>
 
-
-
 Blinds:: Blinds(int pin)
 {
     _pin = pin;
@@ -28,7 +26,7 @@ void inline Blinds::writeBlock(int32_t bits, unsigned int count)
 
 void Blinds::sendCommand(BlindsCommand command, BlindsChannel channel) {
 
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < 7; ++i)
     {
         //start pattern
         digitalWrite(_pin, HIGH);
@@ -40,9 +38,7 @@ void Blinds::sendCommand(BlindsCommand command, BlindsChannel channel) {
         delayMicroseconds(950);
 
         writeCommand(command, channel);
-
     }
-
 }
 
 void Blinds::writeCommand(BlindsCommand command, BlindsChannel channel)
@@ -52,27 +48,8 @@ void Blinds::writeCommand(BlindsCommand command, BlindsChannel channel)
     writeBlock(preamble, 16);
     writeBlock(1, 1);
 
-    writeBlock(command, 12);
     writeBlock(channel, 4);
-
-    switch(command)
-    {
-        case BlindsCommandUp:
-            writeBlock(BlindsCommandCRCUp, 4);
-            break;
-        case BlindsCommandDown:
-            writeBlock(BlindsCommandCRCDown, 4);
-            break;
-        case BlindsCommandOpen:
-            writeBlock(BlindsCommandCRCOpen, 4);
-            break;
-        case BlindsCommandClose:
-            writeBlock(BlindsCommandCRCClose, 4);
-            break;
-        case BlindsCommandStop:
-            writeBlock(BlindsCommandCRCStop, 4);
-            break;
-    }
+    writeBlock(command, 12);
 
     switch(channel)
     {
@@ -95,5 +72,25 @@ void Blinds::writeCommand(BlindsCommand command, BlindsChannel channel)
             writeBlock(BlindsChannelCRC6, 4);
             break;
     }
+
+    switch(command)
+    {
+        case BlindsCommandUp:
+            writeBlock(BlindsCommandCRCUp, 4);
+            break;
+        case BlindsCommandDown:
+            writeBlock(BlindsCommandCRCDown, 4);
+            break;
+        case BlindsCommandOpen:
+            writeBlock(BlindsCommandCRCOpen, 4);
+            break;
+        case BlindsCommandClose:
+            writeBlock(BlindsCommandCRCClose, 4);
+            break;
+        case BlindsCommandStop:
+            writeBlock(BlindsCommandCRCStop, 4);
+            break;
+    }
+
     writeBlock(1, 1);
 }

@@ -37,10 +37,10 @@ enum BlindsChannel : uint8_t{
 enum BlindsChannelCRC : uint8_t{
     BlindsChannelCRC1 = 0b0011,
     BlindsChannelCRC2 = 0b1101,
-    BlindsChannelCRC3 = 0b0000,
-    BlindsChannelCRC4 = 0b0000,
-    BlindsChannelCRC5 = 0b0000,
-    BlindsChannelCRC6 = 0b0000,
+    BlindsChannelCRC3 = 0b0101,
+    BlindsChannelCRC4 = 0b1001,
+    BlindsChannelCRC5 = 0b1001,
+    BlindsChannelCRC6 = 0b0111,
 };
 
 class Blinds {

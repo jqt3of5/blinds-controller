@@ -34,18 +34,21 @@ new Blinds(12, BlindsChannel5)
 };
 //
 
-HADevice device("blinds_touch_pad");
+HADevice device("blinds_controller");
 WiFiClient client;
 HAMqtt mqtt(client, device);
 
 int switch_count = 5;
 HACover * blindsHA [] = {
-new HACover("blinds_channel1", mqtt),
-new HACover("blinds_channel2", mqtt),
-new HACover("blinds_channel3", mqtt),
-new HACover("blinds_channel4", mqtt),
-new HACover("blinds_channel5",  mqtt)
+new HACover("channel1", mqtt),
+new HACover("channel2", mqtt),
+new HACover("channel3", mqtt),
+new HACover("channel4", mqtt),
+new HACover("channel5",  mqtt)
 };
+
+const int motion_sensor_pin = 14;
+HABinarySensor motionSensor("motion_sensor", false, mqtt);
 
 //static inputConsumer_t consumer_Report{};
 //static inputKeyboard_t empty_keyboard_report{}; // sent to PC
@@ -118,6 +121,7 @@ new HACover("blinds_channel5",  mqtt)
 
 void commandHandler(Blinds * blinds, HACover * cover, HACover::CoverCommand command)
 {
+    noInterrupts();
     blinds->sendCommand(command);
 
     switch(command)
@@ -136,6 +140,7 @@ void commandHandler(Blinds * blinds, HACover * cover, HACover::CoverCommand comm
             cover->setState(HACover::StateStopped);
             break;
     }
+    interrupts();
 }
 
 template<int n> void blindsChannel(HACover::CoverCommand command)
@@ -151,6 +156,14 @@ void (*blindsCommandHandler [])(HACover::CoverCommand cmd) = {
         blindsChannel<4>,
 };
 
+bool motion_value_changed = false;
+int last_motion_value = false;
+void IRAM_ATTR motion_sensed_isr()
+{
+    last_motion_value = digitalRead(motion_sensor_pin);
+    motion_value_changed = true;
+}
+
 void setup() {
     Serial.begin(9600);
 
@@ -165,25 +178,31 @@ void setup() {
         Serial.println("Connecting to WiFi..");
     }
 
-    device.setName("Blinds TouchPad");
-    device.setSoftwareVersion("0.0.1");
-    device.enableSharedAvailability();
-    device.setAvailability(true);
+    device.setName("Blinds Controller");
+    device.setSoftwareVersion("0.9.1");
+
+    motionSensor.setAvailability(true);
+    motionSensor.setName("Blinds Motion Sensor");
+
+    pinMode(motion_sensor_pin, INPUT_PULLDOWN);
+    attachInterrupt(digitalPinToInterrupt(motion_sensor_pin), motion_sensed_isr, CHANGE);
+
+    int val = digitalRead(motion_sensor_pin);
+    motionSensor.setState(val);
 
     for (int i = 0; i < switch_count; ++i)
     {
         char * name = (char*)calloc(32, 1);
         sprintf(name, "Blinds Channel %d", i);
         blindsHA[i]->setName(name);
-
         blindsHA[i]->onCommand(blindsCommandHandler[i]);
     }
-
 
     if (!mqtt.begin("tiltpi.equationoftime.tech", 1883))
     {
         Serial.println("Failed to connect to mqtt broker");
     }
+
     while (!mqtt.isConnected())
     {
         Serial.println("Connecting to mqtt");
@@ -197,7 +216,6 @@ void setup() {
         blindsHA[i]->setPosition(50);
         blindsHA[i]->setAvailability(true);
     }
-//
     // Default address is 0x5A, if tied to 3.3V its 0x5B
     // If tied to SDA its 0x5C and if SCL then 0x5D
 //    if (!cap.begin(0x5A)) {
@@ -210,8 +228,11 @@ void setup() {
 void loop() {
     mqtt.loop();
 
-//    blinds->sendCommand(BlindsCommandUp, BlindsChannel1);
-
+    if (motion_value_changed)
+    {
+        motionSensor.setState(last_motion_value);
+        motion_value_changed = false;
+    }
 //    inputKeyboard_t a{};
 //    a.Key[i%6] = 0x02 + i;
 //                //   a.reportId = 0x02;

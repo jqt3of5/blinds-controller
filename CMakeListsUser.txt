@@ -1,5 +1,4 @@
 include_directories("${CMAKE_CURRENT_LIST_DIR}/lib/Adafruit_BusiIO")
-include_directories("${CMAKE_CURRENT_LIST_DIR}/lib/home_assistant")
+include_directories("${CMAKE_CURRENT_LIST_DIR}/lib/home_assistant/include")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/lib/Adafruit_MPR121")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/lib/PubSubClient")
-include_directories("${CMAKE_CURRENT_LIST_DIR}/lib/Ethernet")

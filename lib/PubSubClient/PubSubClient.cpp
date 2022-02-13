@@ -193,6 +193,9 @@ boolean PubSubClient::connect(const char *id, const char *user, const char *pass
             }
         }
 
+
+        Serial.print("Result: ");
+        Serial.println(result);
         if (result == 1) {
             nextMsgId = 1;
             // Leave room in the buffer for header and variable length field

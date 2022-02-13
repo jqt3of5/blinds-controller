@@ -4,9 +4,10 @@
 #include "blinds.h"
 #include <Arduino.h>
 
-Blinds:: Blinds(int pin)
+Blinds:: Blinds(int pin, BlindsChannel channel)
 {
     _pin = pin;
+    _channel = channel;
     pinMode(_pin, OUTPUT);
     digitalWrite(_pin, LOW);
 }
@@ -24,7 +25,22 @@ void inline Blinds::writeBlock(int32_t bits, unsigned int count)
     }
 }
 
-void Blinds::sendCommand(BlindsCommand command, BlindsChannel channel) {
+void Blinds::sendCommand(HACover::CoverCommand command) {
+
+    Serial.println("Sending command");
+    BlindsCommand bCommand;
+    switch(command)
+    {
+        case HACover::CommandOpen:
+            bCommand = BlindsCommandOpen;
+            break;
+        case HACover::CommandClose:
+            bCommand = BlindsCommandClose;
+            break;
+        case HACover::CommandStop:
+            bCommand = BlindsCommandStop;
+            break;
+    }
 
     for (int i = 0; i < 7; ++i)
     {
@@ -37,7 +53,7 @@ void Blinds::sendCommand(BlindsCommand command, BlindsChannel channel) {
         digitalWrite(_pin, HIGH);
         delayMicroseconds(950);
 
-        writeCommand(command, channel);
+        writeCommand(bCommand, _channel);
     }
 }
 

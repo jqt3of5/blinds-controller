@@ -6,6 +6,7 @@
 #define TOUCH_PAD_BLINDS_H
 
 #include <stdint.h>
+#include <ArduinoHA.h>
 
 //Last 4 bits are crc codes
 enum BlindsCommand : uint16_t {
@@ -46,13 +47,14 @@ enum BlindsChannelCRC : uint8_t{
 class Blinds {
 public:
 
-    Blinds(int pin);
-    void sendCommand(BlindsCommand command, BlindsChannel channel);
+    Blinds(int pin, BlindsChannel channel);
+    void sendCommand(HACover::CoverCommand command);
 
 private:
     void writeBlock(int32_t bits, unsigned int count);
     void writeCommand(BlindsCommand command, BlindsChannel channel);
     int _pin;
+    BlindsChannel _channel;
 };
 
 #endif //TOUCH_PAD_BLINDS_H

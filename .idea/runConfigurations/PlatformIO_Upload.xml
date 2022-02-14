@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PlatformIO Upload" type="platformio" factoryName="PlatformIO Upload" nameIsGenerated="true" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="touch-pad" TARGET_NAME="Production" CONFIG_NAME="esp-wrover-kit">
+    <method v="2" />
+  </configuration>
+</component>

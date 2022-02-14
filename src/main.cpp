@@ -26,26 +26,25 @@
 // You can have up to 4 on one i2c bus but one is enough for testing!
 //Adafruit_MPR121 cap = Adafruit_MPR121();
 
-Blinds * blinds[] = {
-new Blinds(12, BlindsChannel1),
-new Blinds(12, BlindsChannel2),
-new Blinds(12, BlindsChannel3),
-new Blinds(12, BlindsChannel4),
-new Blinds(12, BlindsChannel5)
-};
-//
-
 HADevice device("blinds_controller");
 WiFiClient client;
 HAMqtt mqtt(client, device);
 
 int switch_count = 5;
+Blinds * blinds[] = {
+    new Blinds(12, BlindsChannel1),
+    new Blinds(12, BlindsChannel2),
+    new Blinds(12, BlindsChannel3),
+    new Blinds(12, BlindsChannel4),
+    new Blinds(12, BlindsChannel5)
+};
+
 HACover * blindsHA [] = {
-new HACover("channel1", mqtt),
-new HACover("channel2", mqtt),
-new HACover("channel3", mqtt),
-new HACover("channel4", mqtt),
-new HACover("channel5",  mqtt)
+    new HACover("channel1", mqtt),
+    new HACover("channel2", mqtt),
+    new HACover("channel3", mqtt),
+    new HACover("channel4", mqtt),
+    new HACover("channel5",  mqtt)
 };
 
 const int motion_sensor_pin = 14;
@@ -173,6 +172,7 @@ void setup() {
     }
 
     WiFi.begin("WaitingOnComcast", "1594N2640W");
+    WiFi.setAutoReconnect(true);
 
     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
         Serial.println("Connection Failed! Rebooting...");
@@ -222,7 +222,8 @@ void setup() {
     ArduinoOTA.begin();
 
     device.setName("Blinds Controller");
-    device.setSoftwareVersion("0.9.1");
+    device.setSoftwareVersion("0.9.2");
+    device.enableLastWill();
 
     motionSensor.setAvailability(true);
     motionSensor.setName("Blinds Motion Sensor");
@@ -270,12 +271,14 @@ void setup() {
 
 void loop() {
     mqtt.loop();
+    ArduinoOTA.handle();
 
     if (motion_value_changed)
     {
         motionSensor.setState(last_motion_value);
         motion_value_changed = false;
     }
+
 //    inputKeyboard_t a{};
 //    a.Key[i%6] = 0x02 + i;
 //                //   a.reportId = 0x02;

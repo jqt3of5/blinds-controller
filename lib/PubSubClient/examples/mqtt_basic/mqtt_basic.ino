@@ -15,7 +15,7 @@
 
 #include <SPI.h>
 #include <Ethernet.h>
-#include "../../PubSubClient.h"
+#include "PubSubClient.h"
 
 // Update these with values suitable for your network.
 byte mac[]    = {  0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0xED };

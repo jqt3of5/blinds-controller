@@ -27,6 +27,7 @@
 //Adafruit_MPR121 cap = Adafruit_MPR121();
 
 HADevice device("blinds_controller");
+
 WiFiClient client;
 HAMqtt mqtt(client, device);
 
@@ -222,10 +223,10 @@ void setup() {
     ArduinoOTA.begin();
 
     device.setName("Blinds Controller");
+    device.enableSharedAvailability();
     device.setSoftwareVersion("0.9.2");
     device.enableLastWill();
 
-    motionSensor.setAvailability(true);
     motionSensor.setName("Blinds Motion Sensor");
 
     pinMode(motion_sensor_pin, INPUT_PULLDOWN);
@@ -253,6 +254,8 @@ void setup() {
         mqtt.loop();
         delay(500);
     }
+
+    motionSensor.setAvailability(false);
 
     for (int i = 0; i < switch_count; ++i)
     {

@@ -31,7 +31,7 @@ HADevice device("blinds_controller");
 WiFiClient client;
 HAMqtt mqtt(client, device);
 
-int switch_count = 5;
+const int channel_count = 5;
 Blinds * blinds[] = {
     new Blinds(12, BlindsChannel1),
     new Blinds(12, BlindsChannel2),
@@ -48,77 +48,7 @@ HACover * blindsHA [] = {
     new HACover("channel5",  mqtt)
 };
 
-const int motion_sensor_pin = 14;
-HABinarySensor motionSensor("motion_sensor", false, mqtt);
-
-//static inputConsumer_t consumer_Report{};
-//static inputKeyboard_t empty_keyboard_report{}; // sent to PC
-
-//BLEHIDDevice* hid;
-//BLECharacteristic* input;
-//BLECharacteristic* output;
-//BLECharacteristic* inputVolume;
-//BLECharacteristic* outputVolume;
-//bool connected = false;
-
-//char  ha_token[] = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiIzNzhjMDUyYzViZDU0NDgwYmRlZmJiMGVlYzM4YTEyOSIsImlhdCI6MTY0NDYzODYxOCwiZXhwIjoxOTU5OTk4NjE4fQ.0iUaKd_cjfLZLwEp3WXUgbx2TV-Y7bGXT-lDy09WW1U";
-//
-//class MyCallbacks : public BLEServerCallbacks {
-//    void onConnect(BLEServer* pServer){
-//        connected = true;
-//        BLE2902* desc = (BLE2902*)input->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
-//        desc->setNotifications(true);
-//
-//        BLE2902* descv = (BLE2902*)inputVolume->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
-//        descv->setNotifications(true);
-//    }
-//
-//    void onDisconnect(BLEServer* pServer){
-//        connected = false;
-//        BLE2902* desc = (BLE2902*)input->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
-//        desc->setNotifications(false);
-//
-//        BLE2902* descv = (BLE2902*)inputVolume->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
-//        descv->setNotifications(false);
-//    }
-//};
-//
-//void taskServer(void*){
-//    BLEDevice::init("TouchPad");
-//    BLEServer *pServer = BLEDevice::createServer();
-//    pServer->setCallbacks(new MyCallbacks());
-//
-//    hid = new BLEHIDDevice(pServer);
-//    inputVolume = hid->inputReport(1); // <-- input REPORTID from report map
-//    outputVolume = hid->outputReport(1); // <-- output REPORTID from report map
-//
-//    input = hid->inputReport(2); // <-- input REPORTID from report map
-//    output = hid->outputReport(2); // <-- output REPORTID from report map
-//
-//    std::string name = "SubstantiveTech";
-//    hid->manufacturer()->setValue(name);
-//
-//    hid->pnp(0x02, 0xe502, 0xa111, 0x0210);
-//    hid->hidInfo(0x00,0x02);
-//
-//    hid->reportMap((uint8_t*)keyboardHidDescriptor, sizeof(keyboardHidDescriptor));
-//    hid->startServices();
-//
-//
-//    BLESecurity *pSecurity = new BLESecurity();
-////  pSecurity->setKeySize();
-//    pSecurity->setAuthenticationMode(ESP_LE_AUTH_BOND);
-//
-//
-//    BLEAdvertising *pAdvertising = pServer->getAdvertising();
-//    pAdvertising->setAppearance(HID_KEYBOARD);
-//    pAdvertising->addServiceUUID(hid->hidService()->getUUID());
-//    pAdvertising->start();
-//    hid->setBatteryLevel(98);
-//
-//    delay(portMAX_DELAY);
-//}
-//
+int channel_leds[channel_count] = {2, 0, 0, 0, 0};
 
 void commandHandler(Blinds * blinds, HACover * cover, HACover::CoverCommand command)
 {
@@ -156,14 +86,6 @@ void (*blindsCommandHandler [])(HACover::CoverCommand cmd) = {
         blindsChannel<3>,
         blindsChannel<4>,
 };
-
-bool motion_value_changed = false;
-int last_motion_value = false;
-void IRAM_ATTR motion_sensed_isr()
-{
-    last_motion_value = digitalRead(motion_sensor_pin);
-    motion_value_changed = true;
-}
 
 void setup() {
     Serial.begin(9600);
@@ -227,15 +149,7 @@ void setup() {
     device.setSoftwareVersion("0.9.2");
     device.enableLastWill();
 
-    motionSensor.setName("Blinds Motion Sensor");
-
-    pinMode(motion_sensor_pin, INPUT_PULLDOWN);
-    attachInterrupt(digitalPinToInterrupt(motion_sensor_pin), motion_sensed_isr, CHANGE);
-
-    int val = digitalRead(motion_sensor_pin);
-    motionSensor.setState(val);
-
-    for (int i = 0; i < switch_count; ++i)
+    for (int i = 0; i < channel_count; ++i)
     {
         char * name = (char*)calloc(32, 1);
         sprintf(name, "Blinds Channel %d", i);
@@ -255,36 +169,44 @@ void setup() {
         delay(500);
     }
 
-    motionSensor.setAvailability(false);
-
-    for (int i = 0; i < switch_count; ++i)
+    for (int i = 0; i < channel_count; ++i)
     {
         blindsHA[i]->setState(HACover::StateUnknown, true);
         blindsHA[i]->setPosition(50);
         blindsHA[i]->setAvailability(true);
+
+        pinMode(channel_leds[i], OUTPUT);
     }
+
+    digitalWrite(channel_leds[0], HIGH);
+
     // Default address is 0x5A, if tied to 3.3V its 0x5B
     // If tied to SDA its 0x5C and if SCL then 0x5D
 //    if (!cap.begin(0x5A)) {
 //        Serial.println("MPR121 not found, check wiring?");
 //        while (1);
 //    }
-//    xTaskCreate(taskServer, "server", 20000, NULL, 5, NULL);
 }
+
+int currentChannel = 0;
 
 void loop() {
     mqtt.loop();
     ArduinoOTA.handle();
 
-    if (motion_value_changed)
-    {
-        motionSensor.setState(last_motion_value);
-        motion_value_changed = false;
-    }
+//    for (int i = 0; i < channel_count; ++i) {
+//        if (false) {
+//            blindsCommandHandler[currentChannel](HACover::CommandOpen);
+//        }
+//
+//        if (false) {
+//            currentChannel = (currentChannel + 1) % channel_count;
+//            currentChannel = (currentChannel + channel_count - 1) % channel_count;
+//        }
+//    }
 
-//    inputKeyboard_t a{};
-//    a.Key[i%6] = 0x02 + i;
-//                //   a.reportId = 0x02;
-//                input->setValue((uint8_t*)&a,sizeof(a));
-//                input->notify();
+    for (int i = 0; i < channel_count; ++i)
+    {
+        digitalWrite(channel_leds[i], i == currentChannel ? HIGH : LOW);
+    }
 }

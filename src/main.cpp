@@ -180,12 +180,6 @@ void setup() {
 
     digitalWrite(channel_leds[0], HIGH);
 
-    // Default address is 0x5A, if tied to 3.3V its 0x5B
-    // If tied to SDA its 0x5C and if SCL then 0x5D
-//    if (!cap.begin(0x5A)) {
-//        Serial.println("MPR121 not found, check wiring?");
-//        while (1);
-//    }
 }
 
 int currentChannel = 0;
@@ -194,16 +188,16 @@ void loop() {
     mqtt.loop();
     ArduinoOTA.handle();
 
-//    for (int i = 0; i < channel_count; ++i) {
-//        if (false) {
-//            blindsCommandHandler[currentChannel](HACover::CommandOpen);
-//        }
-//
-//        if (false) {
-//            currentChannel = (currentChannel + 1) % channel_count;
-//            currentChannel = (currentChannel + channel_count - 1) % channel_count;
-//        }
-//    }
+    //If up/down/stop button tapped
+    if (false) {
+        blindsCommandHandler[currentChannel](HACover::CommandOpen);
+    }
+
+    //If channel select
+    if (false) {
+        currentChannel = (currentChannel + 1) % channel_count;
+        currentChannel = (currentChannel + channel_count - 1) % channel_count;
+    }
 
     for (int i = 0; i < channel_count; ++i)
     {

@@ -1,12 +1,4 @@
-//#include <BLEDevice.h>
-//#include <BLEUtils.h>
-//#include <BLEServer.h>
-//#include "BLE2902.h"
-//#include "BLEHIDDevice.h"
-//#include "HIDTypes.h"
-//#include "HIDKeyboardTypes.h"
 #include <WiFi.h>
-
 #include <Arduino.h>
 
 #define ARDUINOHA_SWITCH
@@ -14,17 +6,10 @@
 #include <ArduinoOTA.h>
 
 #include "blinds.h"
-//#include "hidReportDescriptor.h"
-
-// See the following for generating UUIDs:
-// https://www.uuidgenerator.net/i
 
 #ifndef _BV
 #define _BV(bit) (1 << (bit))
 #endif
-
-// You can have up to 4 on one i2c bus but one is enough for testing!
-//Adafruit_MPR121 cap = Adafruit_MPR121();
 
 HADevice device("blinds_controller");
 

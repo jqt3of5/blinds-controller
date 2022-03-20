@@ -6,6 +6,7 @@
 #include <ArduinoOTA.h>
 
 #include "blinds.h"
+#include "touch.h"
 
 #ifndef _BV
 #define _BV(bit) (1 << (bit))
@@ -34,6 +35,8 @@ HACover * blindsHA [] = {
 };
 
 int channel_leds[channel_count] = {2, 0, 0, 0, 0};
+int channel_pins[channel_count] = {T1, T2, T3, T4, T5};
+int currentChannel = 0;
 
 void commandHandler(Blinds * blinds, HACover * cover, HACover::CoverCommand command)
 {
@@ -163,25 +166,39 @@ void setup() {
         pinMode(channel_leds[i], OUTPUT);
     }
 
-    digitalWrite(channel_leds[0], HIGH);
+    digitalWrite(channel_leds[currentChannel], HIGH);
 
+    touch_init(channel_pins, channel_count);
 }
 
-int currentChannel = 0;
 
 void loop() {
     mqtt.loop();
     ArduinoOTA.handle();
+    touch_loop();
 
     //If up/down/stop button tapped
-    if (false) {
-        blindsCommandHandler[currentChannel](HACover::CommandOpen);
-    }
+    uint16_t hits = touch_status();
 
-    //If channel select
-    if (false) {
+    if (hits & _BV(1)) {
+        blindsCommandHandler[currentChannel](HACover::CommandOpen);
+        Serial.println("Command Open");
+    }
+    else if (hits & _BV(2)) {
+        blindsCommandHandler[currentChannel](HACover::CommandStop);
+        Serial.println("Command Stop");
+    }
+    else if (hits & _BV(3)) {
+        blindsCommandHandler[currentChannel](HACover::CommandClose);
+        Serial.println("Command Close");
+    }
+    else if (hits & _BV(4)) {
         currentChannel = (currentChannel + 1) % channel_count;
+        Serial.printf("Channel Next: %d", currentChannel);
+    }
+    else if (hits & _BV(5)) {
         currentChannel = (currentChannel + channel_count - 1) % channel_count;
+        Serial.printf("Channel Prev: %d", currentChannel);
     }
 
     for (int i = 0; i < channel_count; ++i)

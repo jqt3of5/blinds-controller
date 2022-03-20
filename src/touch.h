@@ -6,7 +6,7 @@
 #define BLINDS_CONTROLLER_TOUCH_H
 
 //initializes the touch sub system
-void touch_init(int [] touch_pins);
+void touch_init(int touch_pins[], int count);
 
 //each loop (Should be called often) will update the internal filtering
 void touch_loop();

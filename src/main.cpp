@@ -82,7 +82,7 @@ void setup() {
         delay(10);
     }
 
-    WiFi.begin("WaitingOnComcast", "1594N2640W");
+    WiFi.begin("WaitingOnComcast", "");
     WiFi.setAutoReconnect(true);
 
     while (WiFi.waitForConnectResult() != WL_CONNECTED) {

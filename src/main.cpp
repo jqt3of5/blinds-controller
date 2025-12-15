@@ -1,93 +1,49 @@
 #include <WiFi.h>
 #include <Arduino.h>
 
-#define ARDUINOHA_SWITCH
 #include <ArduinoHA.h>
 #include <ArduinoOTA.h>
+#include <HACover.h>
 
-#include "blinds.h"
-#include "touch.h"
+#include "esp_task_wdt.h"
 
 #ifndef _BV
 #define _BV(bit) (1 << (bit))
 #endif
 
-HADevice device("blinds_controller");
+const char * ssid = "WaitingOnComcast";
+const char * pwd = "1594N2640W";
+const char * mqtt_host = "tiltpi.equationoftime.tech";
+const int WDT_TIMEOUT = 5;
 
+HADevice device("auto_watering");
 WiFiClient client;
 HAMqtt mqtt(client, device);
 
-const int channel_count = 5;
-Blinds * blinds[] = {
-    new Blinds(12, BlindsChannel1),
-    new Blinds(12, BlindsChannel2),
-    new Blinds(12, BlindsChannel3),
-    new Blinds(12, BlindsChannel4),
-    new Blinds(12, BlindsChannel5)
-};
+HASensor * controller_uptime = new HASensor("uptime");
+HASensor * soil_moisture_sensor = new HASensor("moisture");
+HASwitch * water_pump_switch = new HASwitch("pump",false);
 
-HACover * blindsHA [] = {
-    new HACover("channel1", mqtt),
-    new HACover("channel2", mqtt),
-    new HACover("channel3", mqtt),
-    new HACover("channel4", mqtt),
-    new HACover("channel5",  mqtt)
-};
-
-int channel_leds[channel_count] = {2, 0, 0, 0, 0};
-int channel_pins[channel_count] = {T1, T2, T3, T4, T5};
-int currentChannel = 0;
-
-void commandHandler(Blinds * blinds, HACover * cover, HACover::CoverCommand command)
-{
-    noInterrupts();
-    blinds->sendCommand(command);
-
-    switch(command)
-    {
-        case HACover::CommandOpen:
-            cover->setState(HACover::StateOpening);
-            //TODO: A sensor of some kind would be awesome
-            cover->setState(HACover::StateOpen);
-            break;
-        case HACover::CommandClose:
-            cover->setState(HACover::StateClosing);
-            //TODO: A sensor of some kind would be awesome
-            cover->setState(HACover::StateClosed);
-            break;
-        case HACover::CommandStop:
-            cover->setState(HACover::StateStopped);
-            break;
-    }
-    interrupts();
-}
-
-template<int n> void blindsChannel(HACover::CoverCommand command)
-{
-    commandHandler(blinds[n], blindsHA[n], command);
-}
-
-void (*blindsCommandHandler [])(HACover::CoverCommand cmd) = {
-        blindsChannel<0>,
-        blindsChannel<1>,
-        blindsChannel<2>,
-        blindsChannel<3>,
-        blindsChannel<4>,
-};
+int pump_pin = 30;
+int moisture_sensor_pin = 30;
 
 void setup() {
+
+    esp_task_wdt_init(WDT_TIMEOUT, true);
+    esp_task_wdt_add(NULL);
+
     Serial.begin(9600);
 
     while (!Serial) { // needed to keep leonardo/micro from starting too fast!
         delay(10);
     }
 
-    WiFi.begin("WaitingOnComcast", "");
+    WiFi.begin(ssid, pwd);
     WiFi.setAutoReconnect(true);
 
     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
         Serial.println("Connection Failed! Rebooting...");
-        delay(5000);
+        delay(1000);
         ESP.restart();
     }
 
@@ -132,20 +88,20 @@ void setup() {
 
     ArduinoOTA.begin();
 
-    device.setName("Blinds Controller");
+    device.setName("Auto Waterer");
     device.enableSharedAvailability();
-    device.setSoftwareVersion("0.9.2");
+    device.setSoftwareVersion("0.0.1");
     device.enableLastWill();
 
-    for (int i = 0; i < channel_count; ++i)
-    {
-        char * name = (char*)calloc(32, 1);
-        sprintf(name, "Blinds Channel %d", i);
-        blindsHA[i]->setName(name);
-        blindsHA[i]->onCommand(blindsCommandHandler[i]);
-    }
+    controller_uptime->setName("Auto Waterer Uptime");
+    controller_uptime->setDeviceClass("duration");
 
-    if (!mqtt.begin("tiltpi.equationoftime.tech", 1883))
+    water_pump_switch->setName("Water Pump");
+
+    soil_moisture_sensor->setName("Soil Moisture");
+    soil_moisture_sensor->setDeviceClass("moisture");
+
+    if (!mqtt.begin(mqtt_host, 1883))
     {
         Serial.println("Failed to connect to mqtt broker");
     }
@@ -157,52 +113,47 @@ void setup() {
         delay(500);
     }
 
-    for (int i = 0; i < channel_count; ++i)
-    {
-        blindsHA[i]->setState(HACover::StateUnknown, true);
-        blindsHA[i]->setPosition(50);
-        blindsHA[i]->setAvailability(true);
-
-        pinMode(channel_leds[i], OUTPUT);
-    }
-
-    digitalWrite(channel_leds[currentChannel], HIGH);
-
-    touch_init(channel_pins, channel_count);
+    digitalWrite(pump_pin, 0);
 }
 
-
+uint32_t lastPublished = 0;
+uint32_t pumpStarted = 0;
+bool pumpRunning = false;
 void loop() {
+
+    esp_task_wdt_reset();
+
     mqtt.loop();
     ArduinoOTA.handle();
-    touch_loop();
 
-    //If up/down/stop button tapped
-    uint16_t hits = touch_status();
-
-    if (hits & _BV(1)) {
-        blindsCommandHandler[currentChannel](HACover::CommandOpen);
-        Serial.println("Command Open");
-    }
-    else if (hits & _BV(2)) {
-        blindsCommandHandler[currentChannel](HACover::CommandStop);
-        Serial.println("Command Stop");
-    }
-    else if (hits & _BV(3)) {
-        blindsCommandHandler[currentChannel](HACover::CommandClose);
-        Serial.println("Command Close");
-    }
-    else if (hits & _BV(4)) {
-        currentChannel = (currentChannel + 1) % channel_count;
-        Serial.printf("Channel Next: %d", currentChannel);
-    }
-    else if (hits & _BV(5)) {
-        currentChannel = (currentChannel + channel_count - 1) % channel_count;
-        Serial.printf("Channel Prev: %d", currentChannel);
-    }
-
-    for (int i = 0; i < channel_count; ++i)
+    if (millis() - lastPublished > 5000)
     {
-        digitalWrite(channel_leds[i], i == currentChannel ? HIGH : LOW);
+        lastPublished = millis();
+        controller_uptime->setValue(lastPublished);
+
+        int moisture = analogRead(moisture_sensor_pin);
+        soil_moisture_sensor->setValue(moisture);
+    }
+
+    //Shutdown the pump after 30 seconds. Meant as a safety to prevent flooding.
+    if (pumpRunning && millis() - pumpStarted > 30000)
+    {
+        digitalWrite(pump_pin, 0);
+        water_pump_switch->turnOff();
+        pumpRunning = false;
+    }
+
+    if (water_pump_switch->getState())
+    {
+        if (!pumpRunning)
+        {
+            pumpStarted = millis();
+            pumpRunning = true;
+        }
+        digitalWrite(pump_pin, 1);
+    }
+    else {
+        digitalWrite(pump_pin, 0);
+        pumpRunning = false;
     }
 }

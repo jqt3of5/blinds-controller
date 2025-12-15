@@ -1,7 +1,7 @@
 #ifndef AHA_DEVICETYPESERIALIZER_H
 #define AHA_DEVICETYPESERIALIZER_H
 
-#include "../../../../../.platformio/packages/framework-arduinoespressif32/tools/sdk/include/newlib/stdint.h"
+#include "stdint.h"
 
 class HADevice;
 class BaseDeviceType;

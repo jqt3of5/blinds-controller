@@ -1,7 +1,7 @@
 #ifndef AHA_BASEDEVICETYPE_H
 #define AHA_BASEDEVICETYPE_H
 
-#include "../../../../../.platformio/packages/framework-arduinoespressif32/tools/sdk/include/newlib/stdint.h"
+#include "stdint.h"
 
 #include "ArduinoHADefines.h"
 #include "DeviceTypeSerializer.h"
